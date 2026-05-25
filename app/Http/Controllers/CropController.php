@@ -16,12 +16,39 @@ class CropController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Add latest reading for each crop
+        $simulator = new SensorSimulatorService();
+
+        // Add latest reading, readings count, and health score for each crop
         foreach ($crops as $crop) {
             $crop->latestReading = SensorReading::where('crop_id', $crop->id)
                 ->orderBy('recorded_at', 'desc')
                 ->first();
             $crop->readingsCount = SensorReading::where('crop_id', $crop->id)->count();
+
+            if ($crop->latestReading) {
+                $profile = $simulator->getProfileForCrop($crop->name);
+                $crop->idealRanges = $profile;
+                $score = 0; $cnt = 0;
+                foreach ($profile as $key => $range) {
+                    $val = $crop->latestReading->{$key};
+                    if ($val >= $range['ideal_min'] && $val <= $range['ideal_max']) {
+                        $score += 100;
+                    } else {
+                        $dist = $val < $range['ideal_min']
+                            ? $range['ideal_min'] - $val
+                            : $val - $range['ideal_max'];
+                        $maxD = $val < $range['ideal_min']
+                            ? $range['ideal_min'] - $range['min']
+                            : $range['max'] - $range['ideal_max'];
+                        $score += max(0, round(100 * (1 - ($maxD > 0 ? $dist / $maxD : 1))));
+                    }
+                    $cnt++;
+                }
+                $crop->healthScore = $cnt > 0 ? round($score / $cnt) : 0;
+            } else {
+                $crop->healthScore = null;
+                $crop->idealRanges = [];
+            }
         }
 
         return view('crops.index', compact('crops'));
@@ -42,6 +69,8 @@ class CropController extends Controller
             'planting_date' => 'required|date',
             'expected_harvest_date' => 'required|date|after:planting_date',
             'status' => 'required|in:active,harvested',
+            'area_acres' => 'nullable|numeric|min:0.1',
+            'estimated_investment' => 'nullable|numeric|min:0',
         ]);
 
         $validated['user_id'] = Auth::id();
@@ -117,6 +146,8 @@ class CropController extends Controller
             'planting_date' => 'required|date',
             'expected_harvest_date' => 'required|date|after:planting_date',
             'status' => 'required|in:active,harvested',
+            'area_acres' => 'nullable|numeric|min:0.1',
+            'estimated_investment' => 'nullable|numeric|min:0',
         ]);
 
         $crop->update($validated);

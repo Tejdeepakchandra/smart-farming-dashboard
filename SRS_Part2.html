@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SRS Part 2 - Smart Farming Dashboard</title>
+<style>
+@page{size:A4;margin:2.5cm 2cm}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11pt;line-height:1.6;color:#222;max-width:800px;margin:0 auto;padding:40px}
+h2{font-size:16pt;color:#16213e;border-bottom:2px solid #22c55e;padding-bottom:5px;margin:25px 0 10px;page-break-after:avoid}
+h3{font-size:13pt;color:#1a1a2e;margin:15px 0 8px}
+h4{font-size:11pt;color:#333;margin:10px 0 5px}
+p{margin:5px 0;text-align:justify}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:10pt}
+th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+th{background:#f0fdf4;font-weight:bold}
+tr:nth-child(even){background:#fafafa}
+pre{background:#f8f8f8;border:1px solid #ddd;padding:12px;font-size:9pt;overflow-x:auto;white-space:pre;border-radius:4px;margin:8px 0}
+ul,ol{margin:5px 0 5px 25px}
+li{margin:3px 0}
+.page-break{page-break-before:always}
+</style>
+</head>
+<body>
+
+<h2>3. Specific Requirements</h2>
+
+<h3>3.1 External Interface Requirements</h3>
+
+<h4>3.1.1 User Interfaces</h4>
+<table>
+<tr><th>Screen</th><th>Description</th></tr>
+<tr><td>Landing Page</td><td>Hero section, feature cards, crop type showcase, login/register buttons</td></tr>
+<tr><td>Registration</td><td>Name, Email, Password, Farm Name, Location fields</td></tr>
+<tr><td>Dashboard</td><td>Welcome banner, 5 sensor health cards with gauges, Chart.js graph, AI panel, alerts</td></tr>
+<tr><td>Crops List</td><td>Grid of crop cards with live sensor snapshots and CRUD buttons</td></tr>
+<tr><td>Add Crop</td><td>Visual 8-crop emoji picker, auto-data generation on save</td></tr>
+<tr><td>Crop Detail</td><td>Ideal vs actual comparison, 24h sensor chart</td></tr>
+<tr><td>Sensor History</td><td>Date/crop filters, chart, color-coded data table</td></tr>
+<tr><td>Alerts</td><td>Emoji severity indicators, mark-as-read buttons</td></tr>
+<tr><td>AI Chat</td><td>WhatsApp-style chat with quick-ask suggestion buttons</td></tr>
+</table>
+
+<h4>3.1.2 Hardware Interfaces</h4>
+<p>No physical hardware. IoT sensor data is simulated through the SensorSimulatorService class via web buttons on the dashboard.</p>
+
+<h4>3.1.3 Software Interfaces</h4>
+<table>
+<tr><th>Software</th><th>Purpose</th></tr>
+<tr><td>MongoDB Atlas</td><td>Store data in 6 collections via mongodb/laravel-mongodb driver</td></tr>
+<tr><td>Google Gemini API</td><td>AI recommendations and chat via REST API (HTTPS POST)</td></tr>
+<tr><td>Laravel Breeze</td><td>Email/password authentication and session management</td></tr>
+<tr><td>Chart.js</td><td>Interactive line charts for sensor trends</td></tr>
+<tr><td>Tailwind CSS</td><td>Responsive UI styling</td></tr>
+</table>
+
+<h4>3.1.4 Communications Interfaces</h4>
+<p>HTTP/HTTPS for client-server; AJAX Fetch API for async operations; MongoDB Wire Protocol (TLS) for database; HTTPS REST for Gemini API.</p>
+
+<h3>3.2 Functional Requirements</h3>
+
+<h4>3.2.1 User Registration and Authentication (FR-01)</h4>
+<p><strong>Inputs:</strong> Name, Email, Password, Confirm Password, Farm Name, Location</p>
+<p><strong>Processing:</strong> Validate fields, hash password (bcrypt), create user in MongoDB, create session.</p>
+<p><strong>Outputs:</strong> Redirect to Dashboard on success; inline error messages on failure.</p>
+<p><strong>Error Handling:</strong> Duplicate email, weak password, invalid credentials — all display user-friendly messages.</p>
+
+<h4>3.2.2 Crop Management — CRUD (FR-02)</h4>
+<p><strong>Inputs:</strong> Crop Name (8 presets or custom), Field Name, Planting Date, Harvest Date, Status.</p>
+<p><strong>Processing:</strong> On CREATE — store crop and auto-generate 20 sensor readings. On READ — fetch with latest reading. On UPDATE — validate and save. On DELETE — remove crop and all associated data.</p>
+<p><strong>Outputs:</strong> Crop list with sensor snapshots; crop detail with ideal vs actual comparison.</p>
+
+<h4>3.2.3 IoT Sensor Data Simulation (FR-03)</h4>
+<p><strong>Inputs:</strong> "New Reading" button (1 reading) or "Fill 24h Data" button (20 readings).</p>
+<p><strong>Processing:</strong> SensorSimulatorService looks up crop profile, generates values (70% within ideal range, 30% drift), stores readings, checks alert thresholds.</p>
+
+<p><strong>Crop-Specific Ideal Ranges:</strong></p>
+<table>
+<tr><th>Crop</th><th>Temp (°C)</th><th>Moisture (%)</th><th>Humidity (%)</th><th>Light (lux)</th><th>Rain (mm)</th></tr>
+<tr><td>Rice</td><td>25–30</td><td>70–85</td><td>70–80</td><td>20K–40K</td><td>15–40</td></tr>
+<tr><td>Wheat</td><td>18–24</td><td>40–55</td><td>45–60</td><td>25K–45K</td><td>5–20</td></tr>
+<tr><td>Tomato</td><td>21–27</td><td>50–65</td><td>50–65</td><td>30K–55K</td><td>5–15</td></tr>
+<tr><td>Corn</td><td>24–32</td><td>50–70</td><td>55–70</td><td>30K–50K</td><td>10–25</td></tr>
+<tr><td>Potato</td><td>15–22</td><td>60–75</td><td>65–80</td><td>18K–35K</td><td>8–20</td></tr>
+<tr><td>Sugarcane</td><td>27–35</td><td>65–80</td><td>65–80</td><td>35K–60K</td><td>15–35</td></tr>
+<tr><td>Cotton</td><td>25–35</td><td>40–55</td><td>40–55</td><td>40K–65K</td><td>5–20</td></tr>
+<tr><td>Soybean</td><td>22–30</td><td>50–65</td><td>55–70</td><td>25K–40K</td><td>8–25</td></tr>
+</table>
+
+<h4>3.2.4 Real-time Dashboard (FR-04)</h4>
+<p><strong>Processing:</strong> Fetch latest reading, compare against ideal range, determine status (Good/Low/High), calculate gauge percentage.</p>
+<p><strong>Outputs:</strong> 5 sensor cards with emoji, large value, farmer-friendly label ("Perfect"/"Too Cold"/"Too Hot"), gauge bar, and ideal range text. Color coding: Green=good, Amber=warning, Red=danger.</p>
+
+<h4>3.2.5 Smart Alert System (FR-05)</h4>
+<p><strong>Processing:</strong> Low moisture (&lt;60% of ideal_min), High temp (&gt;115% of ideal_max), High humidity (&gt;110% of ideal_max), Heavy rain (&gt;200% of ideal_max). Cooldown: same alert type won't re-trigger for 2 hours.</p>
+<p><strong>Outputs:</strong> Alert stored with type (danger/warning/info), displayed with emoji severity, unread count badge.</p>
+
+<h4>3.2.6 AI-Powered Insights (FR-06)</h4>
+<p><strong>Inputs:</strong> "Ask AI" button click.</p>
+<p><strong>Processing:</strong> Fetch latest reading, build prompt with sensor values + crop name + ideal ranges, send to Gemini API (gemini-2.0-flash), parse and store response.</p>
+<p><strong>Outputs:</strong> 3 actionable recommendations in AI panel. Error handling for API rate limits (HTTP 429) and connectivity issues.</p>
+
+<h4>3.2.7 AI Farming Chatbot (FR-07)</h4>
+<p><strong>Inputs:</strong> Text message (max 1000 chars).</p>
+<p><strong>Processing:</strong> Build prompt with farming-assistant persona, send to Gemini API, store message+response in chat_messages collection.</p>
+<p><strong>Outputs:</strong> AI response in chat bubble with typing indicator. Quick-ask suggestion buttons for common questions.</p>
+
+<div class="page-break"></div>
+<h3>3.5 Non-Functional Requirements</h3>
+
+<h4>3.5.1 Performance</h4>
+<ul>
+<li>Dashboard shall load within 3 seconds on stable internet</li>
+<li>Single sensor simulation shall complete within 1 second</li>
+<li>Batch simulation (20 readings) shall complete within 5 seconds</li>
+<li>Charts shall render within 2 seconds for up to 500 data points</li>
+<li>AI insight generation within 30 seconds (dependent on Gemini API)</li>
+</ul>
+
+<h4>3.5.2 Reliability</h4>
+<ul>
+<li>Gemini API failures handled gracefully with user-friendly error messages</li>
+<li>MongoDB connection failures show fallback error pages</li>
+<li>Alert cooldown prevents duplicate alerts within 2-hour windows</li>
+</ul>
+
+<h4>3.5.3 Availability</h4>
+<ul>
+<li>99% uptime when deployed on hosting platform</li>
+<li>MongoDB Atlas provides 99.95% uptime SLA</li>
+<li>Gemini rate limits handled with HTTP 429 error display</li>
+</ul>
+
+<h4>3.5.4 Security</h4>
+<ul>
+<li>Passwords hashed using bcrypt (12 rounds)</li>
+<li>All routes protected by Laravel auth middleware</li>
+<li>User data isolation via user_id ownership checks</li>
+<li>CSRF token protection on all forms</li>
+<li>MongoDB Atlas uses TLS encryption</li>
+<li>API keys stored in .env (never exposed to frontend)</li>
+</ul>
+
+<h4>3.5.5 Maintainability</h4>
+<ul>
+<li>Laravel MVC architecture with separated Models, Views, Controllers</li>
+<li>Business logic encapsulated in service classes (SensorSimulatorService, GeminiService)</li>
+<li>Adding new crop type requires only adding one array entry</li>
+<li>All views use Blade template inheritance for consistent layout</li>
+</ul>
+
+<h4>3.5.6 Portability</h4>
+<ul>
+<li>Runs on any server with PHP 8.2+ and MongoDB extension</li>
+<li>Frontend uses CDN-loaded libraries — no build step required</li>
+<li>Browser-agnostic (Chrome, Firefox, Edge, Safari)</li>
+<li>Responsive design for mobile, tablet, and desktop</li>
+</ul>
+
+<h3>3.7 Design Constraints</h3>
+<ol>
+<li>Must use Laravel 12 with MVC architecture</li>
+<li>Must use MongoDB via mongodb/laravel-mongodb package</li>
+<li>Must use Laravel Breeze for authentication</li>
+<li>Must use Gemini API free tier (no paid AI services)</li>
+<li>No physical IoT hardware — simulation only</li>
+<li>Must use Blade templating (no SPA frameworks)</li>
+</ol>
+
+<h3>3.9 Other Requirements</h3>
+<ul>
+<li>Must work without terminal commands after deployment</li>
+<li>Auto-generate 20 initial readings when a new crop is created</li>
+<li>Charts must be interactive (hover tooltips, clickable legend)</li>
+<li>Landing page publicly accessible without authentication</li>
+</ul>
+
+<div class="page-break"></div>
+<h2>4. Analysis Models</h2>
+
+<h3>4.1 Data Flow Diagrams (DFD)</h3>
+
+<h4>Level 0 — Context Diagram</h4>
+<pre>
+                      ┌──────────────────┐
+   Registration   ──► │                  │ ──►  Dashboard Data
+   Login Info     ──► │                  │ ──►  Sensor Cards
+   Crop Data      ──► │   SMART FARMING  │ ──►  Charts
+   Simulate Req   ──► │   DASHBOARD      │ ──►  Alerts
+   Chat Message   ──► │   SYSTEM         │ ──►  AI Insights
+   AI Request     ──► │                  │ ──►  Chat Response
+                      └────────┬─────────┘
+                   ┌───────────┼───────────┐
+                   ▼           ▼           ▼
+             ┌──────────┐ ┌────────┐ ┌─────────┐
+             │ MongoDB  │ │ Gemini │ │ Browser │
+             │ Atlas    │ │ API    │ │ (User)  │
+             └──────────┘ └────────┘ └─────────┘
+</pre>
+
+<h4>Level 1 — System DFD</h4>
+<pre>
+ ┌────────┐
+ │ FARMER │
+ └───┬────┘
+     │
+     ├──► [1.0 Authentication] ──► users collection
+     │
+     ├──► [2.0 Crop Management] ◄──► crops collection
+     │         │
+     │         ▼
+     ├──► [3.0 Sensor Simulation] ──► sensor_readings collection
+     │         │
+     │         ▼
+     │    [4.0 Alert Engine] ──► alerts collection
+     │
+     ├──► [5.0 AI Insights (Gemini)] ──► ai_insights collection
+     │
+     ├──► [6.0 AI Chat (Gemini)] ──► chat_messages collection
+     │
+     └──► [7.0 Dashboard Display] ◄── reads all collections
+</pre>
+
+<h4>Level 2 — Sensor Simulation Process</h4>
+<pre>
+ [User clicks button]
+       │
+       ▼
+ [3.1 Get Crop Profile] ──► Crop Name
+       │
+       ▼
+ [3.2 Lookup Ideal Ranges] ──► SensorSimulatorService
+       │
+       ▼
+ [3.3 Generate Random Values]
+   (70% ideal, 30% extreme)
+       │
+       ├──► [3.4 Store in sensor_readings (MongoDB)]
+       │
+       └──► [3.5 Check Alert Thresholds]
+                  │
+                  ▼
+             [Create alert if exceeded]
+</pre>
+
+<div class="page-break"></div>
+<h2>5. GitHub Link</h2>
+<p>[Insert your GitHub repository URL here]</p>
+
+<h2>6. Deployed Link</h2>
+<p>[Insert your deployed application URL here]</p>
+
+<h2>7. Client Approval Proof</h2>
+<p>[Insert screenshot/scan]</p>
+
+<h2>8. Client Location Proof</h2>
+<p>[Insert screenshot/scan]</p>
+
+<h2>9. Transaction ID Proof</h2>
+<p>[Insert screenshot/scan]</p>
+
+<h2>10. Email Acknowledgement</h2>
+<p>[Insert screenshot/scan]</p>
+
+<h2>11. GST No</h2>
+<p>[Insert details]</p>
+
+<div class="page-break"></div>
+<h2>A. Appendices</h2>
+
+<h3>A.1 MongoDB Collection Schemas</h3>
+
+<h4>users</h4>
+<pre>{ _id, name, email, password (bcrypt), farm_name, location, created_at, updated_at }</pre>
+
+<h4>crops</h4>
+<pre>{ _id, user_id, name, field_name, planting_date, expected_harvest_date, status, created_at }</pre>
+
+<h4>sensor_readings</h4>
+<pre>{ _id, user_id, crop_id, temperature, soil_moisture, humidity, light_intensity, rainfall, recorded_at }</pre>
+
+<h4>alerts</h4>
+<pre>{ _id, user_id, type (danger|warning|info), message, is_read, triggered_at, created_at }</pre>
+
+<h4>ai_insights</h4>
+<pre>{ _id, user_id, crop_id, sensor_snapshot, prompt_sent, ai_response, created_at }</pre>
+
+<h4>chat_messages</h4>
+<pre>{ _id, user_id, message, response, created_at }</pre>
+
+<h3>A.2 Technology Stack</h3>
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Version</th></tr>
+<tr><td>Backend</td><td>Laravel</td><td>12</td></tr>
+<tr><td>Language</td><td>PHP</td><td>8.2+</td></tr>
+<tr><td>Database</td><td>MongoDB Atlas</td><td>7.x (Free M0)</td></tr>
+<tr><td>Auth</td><td>Laravel Breeze</td><td>Latest</td></tr>
+<tr><td>AI Service</td><td>Google Gemini API</td><td>gemini-2.0-flash</td></tr>
+<tr><td>Frontend</td><td>Laravel Blade</td><td>Built-in</td></tr>
+<tr><td>CSS</td><td>Tailwind CSS</td><td>3.x (CDN)</td></tr>
+<tr><td>Charts</td><td>Chart.js</td><td>4.x (CDN)</td></tr>
+<tr><td>Font</td><td>Google Fonts — Nunito</td><td>—</td></tr>
+</table>
+
+<h3>A.3 Project File Structure</h3>
+<pre>
+app/
+├── Http/Controllers/
+│   ├── DashboardController.php
+│   ├── CropController.php
+│   ├── SensorController.php
+│   ├── AlertController.php
+│   ├── AiInsightController.php
+│   └── ChatController.php
+├── Models/
+│   ├── User.php, Crop.php, SensorReading.php
+│   ├── Alert.php, AiInsight.php, ChatMessage.php
+└── Services/
+    ├── GeminiService.php
+    └── SensorSimulatorService.php
+
+resources/views/
+├── layouts/app.blade.php
+├── welcome.blade.php
+├── dashboard/index.blade.php
+├── crops/ (index, create, edit, show)
+├── sensors/history.blade.php
+├── alerts/index.blade.php
+└── chat/index.blade.php
+</pre>
+
+<br>
+<p style="text-align:center;color:#888;font-style:italic">— End of SRS Document —</p>
+
+</body>
+</html>

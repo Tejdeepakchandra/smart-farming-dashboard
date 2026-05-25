@@ -7,6 +7,10 @@ use App\Http\Controllers\SensorController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AiInsightController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\FarmMapController;
+use App\Http\Controllers\WeatherController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\IrrigationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -43,10 +47,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
 
+    // ─── NEW PREMIUM FEATURES ────────────────────────
+    // Interactive Farm Map (Digital Twin)
+    Route::get('/farm-map', [FarmMapController::class, 'index'])->name('farm-map');
+
+    // Weather Forecast (Open-Meteo API)
+    Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
+    Route::get('/weather/forecast-data', [WeatherController::class, 'forecastData'])->name('weather.forecast-data');
+
+    // Predictive Analytics
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+    // Smart Irrigation Control
+    Route::get('/irrigation', [IrrigationController::class, 'index'])->name('irrigation.index');
+    Route::post('/irrigation/toggle', [IrrigationController::class, 'toggle'])->name('irrigation.toggle');
+
     // Profile (from Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
 
 require __DIR__.'/auth.php';
